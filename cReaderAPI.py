@@ -32,7 +32,9 @@ class cReaderObj(object):
 	# RETURN ADDRESS IF ANY
 	reply_to = False# STRING VARIABLE FOR SENDER(CWRITER) ADDRESS, IF PROVIDED IN MESSAGE
 	sList = None
+	fList = None
 	cSessions = None
+	sessionFIFO = None
 	# ------------------------------------------------------------
 
 	def __init__(self, sbroker, cservice, verbose=True):#verbose=False
@@ -41,10 +43,12 @@ class cReaderObj(object):
 		self.verbose = verbose
 		self.ctx = zmq.Context()
 		self.poller = zmq.Poller()
-		self.sList = []# SESSION LIST
+		self.sList = []# CLIENTS SESSION LIST
+		self.fList = []# FIFO SESSION LIST
 		self.recvState = True
 		self.powerDWN = False
 		self.cSessions = False
+		self.sessionFIFO = False
 		logging.basicConfig(format="%(asctime)s %(message)s", datefmt="%Y-%m-%d %H:%M:%S",
 				level=logging.INFO)
 		self.reconnect_to_sbroker()
@@ -120,15 +124,26 @@ class cReaderObj(object):
 						print "no request needed for this message\n"# !!!!!!!!!!!!!!!
 					assert msg.pop(0) == ''# assert that the next part of the incoming message is an empty delimeter
 					self.cSessions = False
+					self.sessionFIFO = False
 					return msg # return actual message portion from the message, We now have a request to process
 				elif command == MDP.W_HEARTBEAT:# check if command is a HEARTBEAT, is so then:
 					# Do nothing for heartbeats
 					pass
 				elif command == MDP.W_SESSIONS:# check if command is a SESSIONS REQUEST, is so then:
 					self.cSessions = True
+					self.sessionFIFO = False
 					msg.pop(len(msg)-1)
 					self.sList = msg#['sList']+msg# PRINT OUT ACTIVE SESSIONS LIST, print msg
 					return self.cSessions
+				elif command == MDP.W_WEBRTC: # !!!!!!!!!!!!!!!!!!!!!!
+					self.sessionFIFO = True# !!!!!!!!!!!!!!!!!!!!!!
+					self.cSessions = False# !!!!!!!!!!!!!!!!!!!!!!
+					print "HOT DAMN!, GOT FIFO FROM THE BROKER"
+					msg.pop(len(msg)-1)# !!!!!!!!!!!!!!!!!!!!!!
+					print "THIS IS THE FIFO: %s\n" % msg
+					self.fList = msg# !!!!!!!!!!!!!!!!!!!!!!
+					print "turned to list: %s\n" % self.fList[(len(self.fList)-1)]
+					return self.sessionFIFO# !!!!!!!!!!!!!!!!!!!!!!
 				elif command == MDP.W_DISCONNECT:# check if command is a DISCONNECT, is so then:
 					# if self.powerDWN:
 					# 	print "powering down, disconnecting 000"

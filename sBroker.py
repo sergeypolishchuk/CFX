@@ -71,7 +71,7 @@ class sBroker(object):
         self.verbose = verbose
         self.WebRTC_SRV_addr = socket.gethostbyname(socket.getfqdn())#(socket.gethostname())
         self.WebRTC_SRV_port = 8000
-
+        #print "RE$OLVED SBROKER ADDRESS: %s\n" % self.WebRTC_SRV_addr
         self.cservices = {}
         self.creaders = {}
         self.waiting = []
@@ -182,7 +182,7 @@ class sBroker(object):
         elif (MDP.W_WEBRTC == command):# CHECK INCOMING MESSAGE COMMAND AGAINST MDP IF IT'S W_WEBRTC THEN:
             if (creader_ready):
                 print "WEBRTC COMMAND HERE IS THE MESSAGE:%s\n" % msg
-                a_cRD = creader.address
+                a_cRD = creader
                 print "CSERVICES: %s\n" % self.cservices
                 print "CREADERS: %s\n" % self.creaders
                 b_cRD = self.cservices.get(self.require_cservice(msg[0]))
@@ -193,6 +193,9 @@ class sBroker(object):
                     print "VIDEO CALL ID IS  %s\n" % fifoID
                     print "GOING TO NOTIFY EACH CREADER IN THE CALL TO ACESS THE WEBSERVER:%s ON PORT:%s\n" % (self.WebRTC_SRV_addr,self.WebRTC_SRV_port)
                     print "AND INSTRUCT TO USE DEFAULT BROWSER(CHROME) TO LOAD index.html WITH GET REQUEST FIFO_ID"
+                    fifoID = (str(self.WebRTC_SRV_addr) +":"+ str(self.WebRTC_SRV_port) +"/GET?"+ str(fifoID))
+                    self.send_to_creader(creader, MDP.W_WEBRTC, None, fifoID, None)
+                    print "WEBSERVER ADDRESS AND GET REQ WITH FIFO ID: %s SENT TO CALLER\n" % fifoID
                     pass
                 else:
                     print "FAILED TO GENERATE A FIFO ID"
@@ -325,7 +328,7 @@ class sBroker(object):
         if self.verbose:# IF VERBOSE IS TRUE THEN:
             logging.info("I: sending %r to creader", command)# LOG OUTPUT MESSAGE
             dump(msg)# DUMP MESSAGE
-
+        print "A.SENT TO CREADER ADDRESS %s\nB.this message: %s\nC.reply was set:%s\n" % (creader, msg, rtype)
         self.socket.send_multipart(msg)# SEND MESSAGE
         #print "send_to_creader function sent out message: %s to: \n%s\n" % (msg,creader)#!!!!!!!!!!!!!!!
 

@@ -18,7 +18,7 @@ class writeMSG(QtCore.QObject):
 		self.wmsgTRG = None
 		# self.wcallRT = None
 		self.verbose = '-v' in sys.argv
-		self.writerC = cWriterObj("tcp://192.168.1.100:5555", self.verbose)
+		self.writerC = cWriterObj("tcp://192.168.1.9:5555", self.verbose)
 		self.wmsgTXT = None # 'HOW ARE YOU DOING'
 		self.wstatus = True
 
@@ -51,6 +51,7 @@ class writeMSG(QtCore.QObject):
 class readMSG(QtCore.QObject):
 	outSNDR = QtCore.pyqtSignal(str)
 	outRMSG = QtCore.pyqtSignal(str)
+	outFIFO = QtCore.pyqtSignal(str)
 	outSESSIONS = QtCore.pyqtSignal(list)
 	
 	def __init__(self):
@@ -58,10 +59,11 @@ class readMSG(QtCore.QObject):
 		self.rMrun = True# RUN VARIABLE SET TO ENABLE LOOP
 		self.nodeID = socket.gethostname().upper()
 		self.verbose = '-v' in sys.argv
-		self.readerC = cReaderObj("tcp://192.168.1.100:5555", self.nodeID, self.verbose)
+		self.readerC = cReaderObj("tcp://192.168.1.9:5555", self.nodeID, self.verbose)
 		self.recvStatus = True
 		self.readerC.recvState = self.recvStatus
 		self.cSessions = None
+		self.sFIFO = None
 		self.powerDWN = False
 
 	def loop(self):
@@ -74,6 +76,18 @@ class readMSG(QtCore.QObject):
 						if self.nodeID in self.cSessions: self.cSessions.remove(self.nodeID)
 						self.outSESSIONS.emit(self.cSessions)
 					else:
+						pass
+				elif self.readerC.sessionFIFO:
+					print "FIFO passed to READ MESSAGES QThread"
+					self.sFIFO = self.readerC.fList
+					print "FIFO assigned to local variable"
+					if self.sFIFO:
+						self.sFIFO = self.sFIFO[len(self.sFIFO)-1]
+						"FIFO SIGNALING "
+						self.outRMSG.emit(("FIFO_ID:%s" % self.sFIFO))
+						self.outFIFO.emit(str(self.sFIFO))
+					else:
+						print "somethings up with the FIFO, ERROR"
 						pass
 				else:# print "<><<><>><><><> MESSAGE <><>><<>><<><<>><>\n"
 					self.outSNDR.emit(str(self.rmsg[0]))
@@ -135,6 +149,7 @@ class mainWindow(QtGui.QMainWindow):
 		self.rM.outSNDR.connect(self.got_sender)
 		self.rM.outRMSG.connect(self.got_signal)
 		self.rM.outSESSIONS.connect(self.got_sessions)
+		self.rM.outFIFO.connect(self.start_call)
 		self.sndMSG_btn.clicked.connect(self.send_signal)
 		self.sndRTC_btn.clicked.connect(self.send_call)
 		self.endRTC_btn.clicked.connect(self.stop_call)
@@ -173,6 +188,16 @@ class mainWindow(QtGui.QMainWindow):
 		# self.rM.readerC.send_to_sbroker(MDP.W_WEBRTC,None, str(self.sessions_DD.currentText()))
 		self.rM.readerC.send_to_sbroker('\008',None, str(self.sessions_DD.currentText()))
 		#webbrowser.open('http://www.youtube.com/watch?v=5ydqjqZ_3oc')
+	def start_call(self, fifo):
+		print "START CALL INITIATED"
+		if fifo:
+			webSRV = str(fifo)
+			#webSRV = "tcp://192.168.1.9:"+"8000/"+"GET?"+str(fifo) # EDIT THIS WITH DEFINED VARIABLES AND CORRECT VALUES
+			#webbrowser.open('http://www.youtube.com/watch?v=5ydqjqZ_3oc')
+			print "LAUNCHING CHROME with %s\n as FIFO id for the WebRTC call" % (fifo)
+			webbrowser.open('http://'+webSRV)
+		else:
+			self.recvBOX_edit.append(("CFX did not supply a fifo id to start WebRTC call, try it again...\n"))
 	def stop_call(self):
 		self.sndRTC_btn.setEnabled(True)
 		print "STOPPED CALL"
