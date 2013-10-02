@@ -100,13 +100,9 @@ class sBroker(object):
                     dump(msg)
 
                 sender = msg.pop(0)# ITEM.0 IN MSG IDENTIFIES THE CWRITER
-                print "00A INCOMING: sender was: %s\n" % sender
                 empty = msg.pop(0)# ITEM.1 IN MSG IDENTIFIES EMPTY DELIMITER
                 assert empty == ''# CHECK IF EMPTY DELIMITER IS ACTUALLY EMPTY
-                print "00B INCOMING: empty was: %s\n" % empty
                 header = msg.pop(0)# ITEM.2 IN MSG IDENTIFIES CWRITER THAT SENT THE MESSAGE
-                print "00C INCOMING: header was: %s\n" % header
-
                 if (MDP.C_CLIENT == header):# CHECK MDP PROTOCOL AGAINST CWRITER TO CHECK THAT CWRITER LINKED TO SOCKET
                     self.process_cwriter(sender, msg)# START PROCESSING THE CWRITER, RUN PROCESSING FUNCTION ON IT
                 elif (MDP.W_WORKER == header):# CHECK MDP PROTOCOL AGAINST CREADER TO CHECK THAT CREADER LINKED TO SOCKET
@@ -137,11 +133,8 @@ class sBroker(object):
     def process_creader(self, sender, msg):
         assert len(msg) >= 1# CHECK THAT MESSAGE HAS AT LEAST ONE ITEM, COMMAND
         command = msg.pop(0)# ITEM.0 IN MSG IDENTIFIES THE COMMAND
-        print "001 INCOMING : COMMAND %s\n" % command
         creader_ready = hexlify(sender) in self.creaders# LOCATE SENDER IN CREADERS LIST
-        print "002 INCOMING : CREADER_READY %s\n" % creader_ready
         creader = self.require_creader(sender)# ASSIGN TO CREADER VARIABLE
-        print "003 INCOMING : CREADER %s\n" % creader
         if (MDP.W_READY == command):# CHECK INCOMING MESSAGE COMMAND AGAINST MDP IF IT'S W_READY THEN:
             assert len(msg) >= 1# ASSERT IF MESSAGE IS LONG ENOUGH TO PROCESS
             cservice = msg.pop(0)# ITEM.0 IN MSG IDENTIFIES CSERVICE TO USE ON THAT MESSAGE
@@ -154,10 +147,9 @@ class sBroker(object):
                 self.creader_waiting(creader)# MARK CREADER AS WAITING/IDLE
 
         elif (MDP.W_REPLY == command):# CHECK INCOMING MESSAGE COMMAND AGAINST MDP IF IT'S W_REPLY THEN:
-            if (creader_ready):# IF CREADER IS MARKED AS READY
+            if (creader_ready):# IF CREADER IS MARKED AS READY print "got REPLY message, here is what it looks like: %s\n" % msg# !!!!!!!!!!!!!!!!
                 # Remove & save client return envelope and insert the
                 # protocol header and service name, then rewrap envelope.
-                print "got REPLY message, here is what it looks like: %s\n" % msg# !!!!!!!!!!!!!!!!
                 client = msg.pop(0)# ITEM.0 IDENTIFIES CLIENT THAT SENT THE MESSAGE
                 empty = msg.pop(0)# ITEM.1 IDENTIFIES EMPTY DELIMITER 
                 msg = [client, '', MDP.C_CLIENT, creader.service.name] + msg# REWRAP MSG ENVELOPE, IT BECOMES: [0.CLIENT,1.EMPTY,2.MDP HEADER,3.CSERVICEN,4.MESSAGE]
@@ -168,45 +160,25 @@ class sBroker(object):
 
         elif (MDP.W_HEARTBEAT == command):# CHECK INCOMING MESSAGE COMMAND AGAINST MDP IF IT'S W_HEARTBEAT THEN:
             if (creader_ready):# IF CREADER IS MARKED AS READY
-                ###TD###TESTING PURPOSES ONLY
                 slist = dict.keys(self.cservices)# COLLECT ALL KEYS FROM CSERVICES DICTIONARY INTO A LIST           
                 self.send_to_creader(creader, MDP.W_SESSIONS, None, slist, None)# USE A SEND COMMAND TO SEND THE LIST OF CSERVICES TO CREADER
-                #print "REPLIED TO HEARTBEAT CMD FROM %s WITH LIST IF ACTIVE SESSIONS: %s TO %s" % (creader.service.name,slist,creader.service.name)# PROCESS CALLBACK
-                ###TD###REMOVE PRINTING LATER
                 creader.expiry = time.time() + 1e-3*self.HEARTBEAT_EXPIRY# RESET CREADER'S HEARTBEAT EXPIRY VALUE
-                #self.creader_waiting(creader)#added
             else:# ELSE IF CREADER IS NOT READY:
                 self.delete_creader(creader, True)# DELETE CREADER, BY PASSING CREADER TO CREADER_DELETE FUNCTION
                 self.purge_creaders()# !!!!!!!!!!!!!!!!!!!!!!!!!!!
 
         elif (MDP.W_WEBRTC == command):# CHECK INCOMING MESSAGE COMMAND AGAINST MDP IF IT'S W_WEBRTC THEN:
             if (creader_ready):
-                print "WEBRTC COMMAND HERE IS THE MESSAGE:%s\n" % msg
                 a_cRD = creader
-                #print "CSERVICES: %s\n" % self.cservices
-                #print "CREADERS: %s\n" % self.creaders
-                print "CREADERS KEYS: %s\n" % self.creaders.keys()
-                print "CREADERS VALUES: %s\n" % self.creaders.values()
-                #self.maintenance(self.creaders, 'creaders.txt')
-                #for x in self.creaders.keys(): if x.service and x.service == (self.require_cservice(msg[0])):
                 b_cRD = self.find_creader_by_cservice(msg[0])
                 fifoID = self.generate_fifo()
-                print "VIDEO CALL RECEVICED BY SBROKER:A>%s is calling B>%s\n" % (a_cRD, b_cRD)
                 if fifoID and a_cRD and b_cRD:
-                    print "VIDEO CALL ID IS  %s\n" % fifoID
-                    print "GOING TO NOTIFY EACH CREADER IN THE CALL TO ACESS THE WEBSERVER:%s ON PORT:%s\n" % (self.WebRTC_SRV_addr,self.WebRTC_SRV_port)
-                    print "AND INSTRUCT TO USE DEFAULT BROWSER(CHROME) TO LOAD index.html WITH GET REQUEST FIFO_ID"
                     fifoID = (str(self.WebRTC_SRV_addr) +":"+ str(self.WebRTC_SRV_port) +"/GET?"+ str(fifoID))
-                    # self.send_to_creader(creader, MDP.W_WEBRTC, None, fifoID, None)
                     self.send_to_creader(a_cRD, MDP.W_WEBRTC, None, fifoID, None)
                     self.send_to_creader(b_cRD, MDP.W_WEBRTC, None, fifoID, None)
-                    print "WEBSERVER ADDRESS AND GET REQ WITH FIFO ID: %s SENT TO CALLER and CALLEE\n" % fifoID
-                    pass
                 else:
-                    print "FAILED TO GENERATE A FIFO ID or FAILED TO RESOLVE CALLER AND CALLEE"
                     pass
             else:
-                print "VIDEO CALL FAILURE"
                 pass
 
         elif (MDP.W_POWERDOWN == command):# CHECK INCOMING MESSAGE COMMAND AGAINST MDP IF IT'S W_POWERDOWN THEN:
@@ -224,7 +196,6 @@ class sBroker(object):
         else:# ELSE, COMMAND IN THE MESSAGE FAILED MATCHING AGAINST THE MDP, MESSAGE WILL BE DUMPED AND STDOUT AS INVALID MESSAGE, BEACUSE IT DIDN'T MEET THE NECESSARY STRUCTURE.
             logging.error("E: invalid message:")
             dump(msg)            
-
     #   CREADER DELETE FUNCTION, delete CREADER session, remove corresponding CSERVICE from CSERVCIES
     def delete_creader(self, creader, disconnect):
         assert creader is not None# ASSERT THAT CREADER IS NOT NONE AND HAS BEEN PASSED TO THE DELETE FUNCTION CORRECTLY
@@ -237,11 +208,8 @@ class sBroker(object):
     #   CREADER REQUIRE FUNCTION, find CREADER to handle a message sent by CWRITER to a corresponding CSERVICE
     def require_creader(self, address):
         assert (address is not None)# ASSERT THAT ADDRESS VARIABLE HAS BEEN PASSED TO REQUIRE_CREADER FUNCTION
-        print "000 PROCESS: CREADER ADDERSS: %s\n" % address
         identity = hexlify(address)# HEXLIFY THE ADDRESS AND ASSIGN IT TO VARIABLE - identity
-        print "001 PROCESS: CREADER IDENTITY: %s\n" % identity
         creader = self.creaders.get(identity)# LOCATE A CREADER FROM THE REGISTERED CREADERS DICTIONARY BY IDENTITY OF THE CREADER
-        print "002 PROCESS: CREADER FOUND: %s\n" % creader
         if (creader is None):# IF CREADER COULD NOT BE FOUND IN THE CREADERS DICTIONARY THEN:
             creader = cReader(identity, address, self.HEARTBEAT_EXPIRY)# CREATE CREADER, PASS(IDENTITY, ADDRESS,SET HEARTBEAT EXPIRY)
             self.creaders[identity] = creader# ADD CREADER TO LIST OF CREADERS
@@ -252,9 +220,7 @@ class sBroker(object):
     #   CSERVICE REQUIRE FUNCTION, find CSERVICE in list of registered CSERVICES, or create a CSERVICE if cannot be found
     def require_cservice(self, name):
         assert (name is not None)# ASSERT THAT NAME VARIABLE HAS BEEN PASSED TO THE REQUIRE_SERVICE FUNCTION
-        print "003 PROCESS: CSERVICE NAME: %s\n" % name
         cservice = self.cservices.get(name)# LOCATE THE CSERVICE.NAME
-        print "004 PROCESS: CSERVICE FOUND: %s\n" % cservice
         if (cservice is None):# IF CSERVICE CANNOT BE FOUND THEN:
             cservice = cService(name)# ASSIGN NAME TO CSERVICE
             self.cservices[name] = cservice#
@@ -276,7 +242,6 @@ class sBroker(object):
             name = msg[-1]# GET THE NAME OF SERVICE FROM THE VERY LAST ITEM IN THE MSG LIST, ASSING IT TO name VARIABLE
             returncode = "200" if name in self.cservices else "404"# RETURN 200 IF name FOUND IN CSERVICESM ELSE RETURN 404
         msg[-1] = returncode# MODIFY MSG LSIT BY TAKING THE LAST ITEM AND CHANGING IT TO 501
-
         # insert the protocol header and service name after the routing envelope ([client, ''])
         msg = msg[:2] + [MDP.C_CLIENT, service] + msg[2:]# REWRAP THE ENVELOPE IT WILL BE : [ITEM.0,ITEM.1,MDP.C_CLIENT,SERVICE VARIABLE,ITEMS.2,ITEM.3 so on]
         self.socket.send_multipart(msg)# SEND THE MESSAGE AS MULTIPART TO SOCKET
@@ -329,10 +294,9 @@ class sBroker(object):
 
         if self.verbose:# IF VERBOSE IS TRUE THEN:
             logging.info("I: sending %r to creader", command)# LOG OUTPUT MESSAGE
-            dump(msg)# DUMP MESSAGE
-        print "A.SENT TO CREADER ADDRESS %s\nB.this message: %s\nC.reply was set:%s\n" % (creader, msg, rtype)
+            dump(msg)# DUMP MESSAGE # print "A.SENT TO CREADER ADDRESS %s\nB.this message: %s\nC.reply was set:%s\n" % (creader, msg, rtype)
+        
         self.socket.send_multipart(msg)# SEND MESSAGE
-        #print "send_to_creader function sent out message: %s to: \n%s\n" % (msg,creader)#!!!!!!!!!!!!!!!
     #   SBROKER GENERATE A FIFO ID FOR WEBRTC CONNECTION BETWEEN CALLER AND CALEE, IT WILL BE USED TO CREATE OFFER/REPLY SCHEMA
     def generate_fifo(self):#, fifo):
         fifo = uuid.uuid4().hex
@@ -342,76 +306,6 @@ class sBroker(object):
             print "random wasn't random enough"
             fifo = false
         return fifo
-    #   MAINTENANCE FUNCTION -DELETE LATER
-    def maintenance(self, mVar, mName):
-        print "started maintenance function, opened file"
-        if mVar and mName:
-            mPath = "//EYEBALLX3/personal space/sergey/0000_NUKE/TESTING/LOGGING/"
-            mfile = open((mPath + mName),'w')
-            for key, value in mVar.iteritems():
-                mout = ['KEY:',key, ' ATTRIBUTES:']
-                mout.append('\n')
-                if value.identity:
-                    mout.append('CREADER_IDENTITY:')
-                    mout.append(value.identity)
-                    mout.append('\n')
-                else: 
-                    pass
-                if value.address:
-                    mout.append('CREADER_ADDRESS:')
-                    mout.append(value.address)
-                    mout.append('\n')
-                else:
-                    pass
-                if value.service:
-                    mout.append('CREADER_SERVICE:')
-                    mout.append(value.service)
-                    mout.append('\n')
-                    mout.append(type(value.service))
-                    mout.append('\n')
-                    #for k,v in value.service.iteritems():
-                    v = value.service
-                    mout.append('START OF SERVICE ATTRIBUTES:')
-                    mout.append('\n')
-                    if v.name:
-                        mout.append('CSERVICE_NAME:')
-                        mout.append(v.name)
-                        mout.append('\n')
-                    else:
-                        pass
-                    if v.requests:
-                        mout.append('CSERVICE_REQUESTS:')
-                        mout.append(v.requests)
-                        mout.append('\n')
-                    else:
-                        pass
-                    if v.waiting:
-                        mout.append('CSERVICE_WAITING:')
-                        mout.append(v.waiting)
-                        mout.append('\n')
-                    else:
-                        pass
-                    mout.append('END OF SERVICE ATTRIBUTES')
-
-                    mout.append('\n')
-                    mout.append('\n')
-                else:
-                    pass
-                if value.expiry:
-                    mout.append('CREADER_EXPIRY:')
-                    mout.append(value.expiry)
-                    mout.append('\n')
-                else:
-                    pass
-                if isinstance(mout, list):
-                    mfile.write(str(mout)+'END OF KEY')
-                else:
-                    pass
-            mfile.close()
-            print "saved log for objects in %s\n" % mVar
-        else:
-            pass
-        print "exited maintenance function, closed file"
     #END OF SBROKER FUNCTIONS
 
 def main():# MAIN FUNCTION, ESTABLISHES CBORKER CONNECTION, BINDS THE SBROKER TO OPEN PORT
