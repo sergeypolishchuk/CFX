@@ -69,8 +69,8 @@ class sBroker(object):
     def __init__(self, verbose=True):#def FALSE
         """Initialize broker state."""
         self.verbose = verbose
-        self.WebRTC_SRV_addr = socket.gethostbyname(socket.getfqdn())#(socket.gethostname())
-        self.WebRTC_SRV_port = 8000
+        #self.WebRTC_SRV_addr = socket.gethostbyname(socket.getfqdn())#(socket.gethostname()) -- WEBRTC OPTIONAL
+        #self.WebRTC_SRV_port = 8000 -- WEBRTC OPTIONAL
         #print "RE$OLVED SBROKER ADDRESS: %s\n" % self.WebRTC_SRV_addr
         self.cservices = {}
         self.creaders = {}
@@ -167,19 +167,20 @@ class sBroker(object):
                 self.delete_creader(creader, True)# DELETE CREADER, BY PASSING CREADER TO CREADER_DELETE FUNCTION
                 self.purge_creaders()# !!!!!!!!!!!!!!!!!!!!!!!!!!!
 
-        elif (MDP.W_WEBRTC == command):# CHECK INCOMING MESSAGE COMMAND AGAINST MDP IF IT'S W_WEBRTC THEN:
-            if (creader_ready):
-                a_cRD = creader
-                b_cRD = self.find_creader_by_cservice(msg[0])
-                fifoID = self.generate_fifo()
-                if fifoID and a_cRD and b_cRD:
-                    fifoID = (str(self.WebRTC_SRV_addr) +":"+ str(self.WebRTC_SRV_port) +"/GET?"+ str(fifoID))
-                    self.send_to_creader(a_cRD, MDP.W_WEBRTC, None, fifoID, None)
-                    self.send_to_creader(b_cRD, MDP.W_WEBRTC, None, fifoID, None)
-                else:
-                    pass
-            else:
-                pass
+
+#        elif (MDP.W_WEBRTC == command):# CHECK INCOMING MESSAGE COMMAND AGAINST MDP IF IT'S W_WEBRTC THEN:
+#            if (creader_ready):
+#                a_cRD = creader
+#                b_cRD = self.find_creader_by_cservice(msg[0])
+#                fifoID = self.generate_fifo()
+#                if fifoID and a_cRD and b_cRD:
+#                    fifoID = (str(self.WebRTC_SRV_addr) +":"+ str(self.WebRTC_SRV_port) +"/GET?"+ str(fifoID))
+#                    self.send_to_creader(a_cRD, MDP.W_WEBRTC, None, fifoID, None)
+#                    self.send_to_creader(b_cRD, MDP.W_WEBRTC, None, fifoID, None)
+#                else:
+#                    pass
+#            else:
+#                pass
 
         elif (MDP.W_POWERDOWN == command):# CHECK INCOMING MESSAGE COMMAND AGAINST MDP IF IT'S W_POWERDOWN THEN:
             if (creader_ready):
