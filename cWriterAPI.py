@@ -55,7 +55,7 @@ class cWriterObj(object):
 	def cWcall(self, command, peers):
 		if not isinstance(peers, list):
 			peers = [peers]
-		peers = ['',MDP.C_WORKER, command] + peers
+		peers = ['',MDP.W_WORKER, command] + peers
 		self.cwriter.send_multipart(peers)
 
 	# FUNCTION IS CALLED WHEN MESSAGES COME BACK FROM CSERVER
@@ -72,10 +72,10 @@ class cWriterObj(object):
 				logging.info("I: received reply")
 				dump(msg)
 			assert len(msg) >= 4# assert that REPLY message list is longer then 4 items
-			empty = msg.pop(0)# strip empty delimeter from reply
+			msg.pop(0)#empty = msg.pop(0)# strip empty delimeter from reply### ENABLE EMPTY LATER IF NEEDED
 			header = msg.pop(0)# strip header from reply
 			assert MDP.C_CLIENT == header# check if header of rely is valid and was intended for CWRITER
-			cservice = msg.pop(0)# strip cservice from reply
+			msg.pop(0)#cservice = msg.pop(0)# strip cservice from reply### ENABLE CSERVICE LATER IF NEEDED TO CHECK THE SERVICE ATTRIBUTE IN THE msg
 			return msg# return sent reply, this should be the last item of the reply
 		else:# if reply is invalid and doesn't pass the asserts or wasn't long enough, print information to the user
 			logging.warn("W: permanent error, abandoning request")

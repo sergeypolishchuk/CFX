@@ -1,8 +1,8 @@
 from PyQt4 import QtCore, QtGui
 from cWriterAPI import cWriterObj
 from cReaderAPI import cReaderObj
-import MDP
-import sys, time, socket, logging, webbrowser
+#import MDP
+import sys, socket, webbrowser#, time, logging
 ### testing IP's of SBROKER MACHINES: () CHANGE LINES 21 & 61 ADDRESSES FOR THIS FILE TO RUN
 ### HOME: 192.168.1.100
 ### WORK: 192.168.1.9
@@ -28,18 +28,25 @@ class writeMSG(QtCore.QObject):
 				self.writerC.cWsend(self.wmsgTRG, ([self.nodeID,self.wmsgTXT]))
 				print "sent message to !!!!!!!!!!!!!!!%s!!!!!!!!!!!!!!" % self.wmsgTRG
 				self.wstatus = False
+				print ('BreakPOINT WriteMSG LOOP - REPLY was: %s' % self.writerC.cWrecv()) #### TMP
 				self.rmsgREP = self.writerC.cWrecv()
-				if self.rmsgREP[0] == self.wmsgTXT:
-					self.wstatus = True
-					cback = ('ZMQ cWriterObj callback:'+self.rmsgREP[0]+':SENT DELIVERED CONFIRMED\n')
-					dlvr = True
-					self.outDLVR.emit(dlvr)
-					#self.outWMSG.emit(str(cback))
+				if self.rmsgREP is not None:
+					if self.rmsgREP[0] == self.wmsgTXT:
+						self.wstatus = True
+# 						cback = ('ZMQ cWriterObj callback:'+self.rmsgREP[0]+':SENT DELIVERED CONFIRMED\n')
+						dlvr = True
+						self.outDLVR.emit(dlvr)
+						#self.outWMSG.emit(str(cback))
+					else:
+						dlvr = False
+						self.outDLVR.emit(dlvr)
+						self.wstatus = True
 				else:
+					print 'No REPLY RECEIVED, CHECK CONNECTION to sBroker'#### TMP
 					dlvr = False
 					self.outDLVR.emit(dlvr)
-
 					self.wstatus = True
+					
 				self.wmsgTXT = None
 			# elif self.wcallRT:
 			# 	self.writerC.cWcall(self.wmsgTRG, ([self.nodeID,self.wcallRT]))
@@ -87,7 +94,7 @@ class readMSG(QtCore.QObject):
 						self.outRMSG.emit(("FIFO_ID:%s" % self.sFIFO))
 						self.outFIFO.emit(str(self.sFIFO))
 					else:
-						print "somethings up with the FIFO, ERROR"
+						print "something up with the FIFO, ERROR"
 						pass
 				else:# print "<><<><>><><><> MESSAGE <><>><<>><<><<>><>\n"
 					self.outSNDR.emit(str(self.rmsg[0]))

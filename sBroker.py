@@ -4,7 +4,7 @@ import logging
 import sys
 import time
 import uuid
-import socket
+#import socket # ENABLE IF TRYING TO USE WEBRTC FUNCTIONALITY
 from binascii import hexlify
 #IMPORT PYZMQ EXTANSION LIBRARY
 import zmq
@@ -151,7 +151,7 @@ class sBroker(object):
                 # Remove & save client return envelope and insert the
                 # protocol header and service name, then rewrap envelope.
                 client = msg.pop(0)# ITEM.0 IDENTIFIES CLIENT THAT SENT THE MESSAGE
-                empty = msg.pop(0)# ITEM.1 IDENTIFIES EMPTY DELIMITER 
+                msg.pop(0)#empty = msg.pop(0)# ITEM.1 IDENTIFIES EMPTY DELIMITER### ENABLE EMPTY LATER IF NEEDED 
                 msg = [client, '', MDP.C_CLIENT, creader.service.name] + msg# REWRAP MSG ENVELOPE, IT BECOMES: [0.CLIENT,1.EMPTY,2.MDP HEADER,3.CSERVICEN,4.MESSAGE]
                 self.socket.send_multipart(msg)# SEND MESSAGE TO CREADER
                 self.creader_waiting(creader)# MARK CREADER AS WAITING AFTER SENDING MSG
@@ -305,7 +305,7 @@ class sBroker(object):
             self.fifolist.append(fifo)
         else:
             print "random wasn't random enough"
-            fifo = false
+            fifo = False
         return fifo
     #END OF SBROKER FUNCTIONS
 

@@ -10,10 +10,10 @@ from random import randint
 import zmq
 
 # fix ROUTER/DEALER aliases, missing from pyzmq < 2.1.9
-if not hasattr(zmq, 'ROUTER'):
-    zmq.ROUTER = zmq.XREP
-if not hasattr(zmq, 'DEALER'):
-    zmq.DEALER = zmq.XREQ
+# if not hasattr(zmq, 'ROUTER'):
+#     zmq.ROUTER = zmq.XREP
+# if not hasattr(zmq, 'DEALER'):
+#     zmq.DEALER = zmq.XREQ
 
 
 # Receives all message parts from socket, prints neatly
