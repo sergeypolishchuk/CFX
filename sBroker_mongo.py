@@ -1,7 +1,8 @@
 # broker_sessions.py
 # broker thread, for sessions
-# clss for user machine object
-import threading, time, logging, socket, sys, zmq, NP
+# class for user machine object
+import threading, time, logging, zmq#, sys, socket  
+from thread_test import NP# ENABLE ONCE SUBFOLDER IS RESOLVED
 from binascii import hexlify
 from zhelpers import dump
 
@@ -16,13 +17,13 @@ class uNode(object):
 	mcap = None
 
 	def __init__(self, name, user, address, identity, mtype, mcap, lifetime):
-	self.uMname = name# user machine name
-	self.uNname = user# user name, who is logged in on this machine
-	self.identity = None# machine identity, hex identity of the machine
-	self.expiry = time.time() + 1e-3*lifetime# machine expiry value, heartbeats will keep machine alive by resetting this value
-	self.address = address # machine address, messages intended for user will be routed to this address
-	self.mtype = mtype# machine type , e.g. WIN OSX LINUX ADROID OS7
-	self.mcap = mcap# machine capability, list of tags for type of messages this machine can recieve
+		self.uMname = name# user machine name
+		self.uNname = user# user name, who is logged in on this machine
+		self.identity = None# machine identity, hex identity of the machine
+		self.expiry = time.time() + 1e-3*lifetime# machine expiry value, heartbeats will keep machine alive by resetting this value
+		self.address = address # machine address, messages intended for user will be routed to this address
+		self.mtype = mtype# machine type , e.g. WIN OSX LINUX ADROID OS7
+		self.mcap = mcap# machine capability, list of tags for type of messages this machine can recieve
 
 # class for user name object
 class userName(object):
@@ -80,7 +81,7 @@ class sBrokerSessions(threading.Thread):
 					empty = msg.pop(0)#  empty delimiter frame of the message
 					assert empty == ''# check if message is formatted correctly
 					header = msg.pop(0) # get the node class that sent the message
-					if (NP.N_NODE == header)# check the node against node protocol
+					if (NP.N_NODE == header):# check the node against node protocol
 						self.uNodeProcessing(sender, msg)# add node that sent the message to sessions
 					else:
 						logging.error("E: invalid message to sessions thread")
@@ -112,21 +113,22 @@ class sBrokerSessions(threading.Thread):
 			identity = hexlify(address)
 			unode = self.uNodes.get(identity)
 			if (unode is None):
-				unode = uNode(name, user, address, identity, mtype, mcap, self.HEARTBEAT_EXPIRY)
+				unode = uNode(self.name, user, address, identity, mtype, mcap, self.HEARTBEAT_EXPIRY)
 				self.uNodes[identity] = unode
 				if self.verbose:
 					logging.info("I: added a new node to uNodes")
 
 			return unode
 
+
 		def delete_dead_uNodes(self):
-
+			pass
 		def send_heartbeats_to_uNodes(self):
-
+			pass
 		def send_Session_List(self):
-
+			pass
 		def bind_zmq_socket(self):
-
+			pass
 
 # def sBrokerMainThread():
 # 	cB = #
